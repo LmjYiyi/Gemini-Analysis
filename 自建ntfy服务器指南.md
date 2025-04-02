@@ -38,7 +38,8 @@
    ```
 
 2. 在该文件夹中创建 `docker-compose.yml` 文件，内容如下：
-   ```yaml
+
+```yaml
 version: "3.8" # 你可以保留或移除这行，它已过时但通常无害
 
 services:
@@ -60,7 +61,7 @@ services:
     ports:
       - 80:80
     restart: unless-stopped
-   ```
+```
 
 3. 在 `docker-compose.yml` 所在目录打开 PowerShell，执行：
    ```powershell
