@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI 截图分析</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <style>
+        :root {
+            --primary-color: #4285f4; /* Google Blue - default */
+            --secondary-color: #34a853; /* Google Green */
+            --accent-color: #ea4335; /* Google Red */
+            --text-color: #333333;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 动态主题颜色 - 基于模型名称 */
+        .theme-pro {
+            --primary-color: #8e44ad; /* 紫色主题 - Pro */
+        }
+
+        .theme-flash {
+            --primary-color: #3498db; /* 蓝色主题 - Flash */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.7;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 880px;
+            margin: 20px auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 500;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            transition: color 0.3s ease;
+        }
+
+        h2 {
+            color: var(--text-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 20px;
+            background-color: var(--primary-color);
+            margin-right: 10px;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .hotkeys-help {
+            background-color: rgba(66, 133, 244, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #444;
+            border-left: 4px solid var(--primary-color);
+            transition: border-color 0.3s ease;
+        }
+
+        .hotkeys-help h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            transition: color 0.3s ease;
+        }
+
+        .hotkeys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 8px;
+        }
+
+        .hotkey-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .hotkey {
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-right: 8px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        #status {
+            font-style: italic;
+            color: #666;
+            background-color: var(--light-bg);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: inset 0 1px 3px var(--shadow-color);
+            flex-grow: 1;
+            margin-right: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        #status::before {
+            content: "•";
+            display: inline-block;
+            color: var(--secondary-color);
+            margin-right: 8px;
+            font-size: 1.5rem;
+            line-height: 0;
+            position: relative;
+            top: 3px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        #model-status {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+
+        #clear-history-button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            box-shadow: 0 2px 10px rgba(52, 168, 83, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        #clear-history-button:hover {
+            background-color: #2d9747;
+            box-shadow: 0 4px 12px rgba(52, 168, 83, 0.4);
+            transform: translateY(-2px);
+        }
+
+        #clear-history-button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 5px rgba(52, 168, 83, 0.3);
+        }
+
+        #clear-history-button::before {
+            content: "↺";
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+
+        #image-container {
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        #image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 10px 0;
+            display: block;
+            box-shadow: 0 2px 15px var(--shadow-color);
+            transition: all 0.3s ease;
+            min-height: 200px; /* 给图片一个最小高度 */
+            background-color: #f6f6f6;
+        }
+
+        /* 加载动画 */
+        .loading-image {
+            position: relative;
+        }
+
+        .loading-image::after {
+            content: "";
+            position: absolute;
+            top: calc(50% - 25px);
+            left: calc(50% - 25px);
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(66, 133, 244, 0.2);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #prompt-container {
+            margin: 25px 0;
+            transition: all 0.3s ease;
+        }
+
+        #prompt-container code {
+            background-color: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+            display: block;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #0f172a;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 8px var(--shadow-color);
+            transition: border-left-color 0.3s ease;
+        }
+
+        #llm-result-container {
+            margin: 25px 0 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        #llm-result {
+            background-color: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            display: block;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 150px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #1e293b;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 3px 12px var(--shadow-color);
+            transition: border-left-color 0.3s ease;
+        }
+
+        /* 结果区域的高亮文本 */
+        #llm-result strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 媒体查询 - 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            #model-status {
+                margin-top: 10px;
+                align-self: flex-start;
+            }
+            
+            #status {
+                width: 100%;
+                margin-right: 0;
+            }
+
+            .hotkeys-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 页脚信息 */
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gemini AI 截图自动分析</h1>
+
+    <div class="hotkeys-help">
+        <h3>快捷键指南</h3>
+        <div class="hotkeys-grid">
+            <div class="hotkey-item">
+                <span class="hotkey">Ctrl+Shift</span> 
+                <span>截图并分析</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="hotkey">Ctrl+Alt+P</span> 
+                <span>切换到 Pro 模型</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="hotkey">Ctrl+Alt+F</span> 
+                <span>切换到 Flash 模型</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="hotkey">Ctrl+Alt+↑↓←→</span> 
+                <span>滚动页面</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="hotkey">Ctrl+Alt+Backspace</span> 
+                <span>清除对话历史</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div id="status">正在连接到服务器...</div>
+        <div id="model-status">当前模型: gemini-2.0-flash-thinking-exp</div>
+    </div>
+
+    <button id="clear-history-button">清除对话历史</button>
+
+    <div id="image-container">
+        <h2>最新接收的截图</h2>
+        <img id="received-image" src="" alt="等待接收图片..." class="loading-image">
+    </div>
+
+    <div id="prompt-container">
+        <h2>处理指令</h2>
+        <code id="fixed-prompt">解决图片中的问题，给出答案，如果是编程题则使用Java语言编码解决。确保使用中文回答问题</code>
+    </div>
+
+    <div id="llm-result-container">
+        <h2>对话历史与结果</h2>
+        <pre id="llm-result">等待接收截图并自动处理...</pre>
+    </div>
+
+    <div class="footer">
+        基于 Gemini AI 多模态能力 · 截图快速分析工具
+    </div>
+</div>
+
+<script>
+    // 定义你的 ntfy 主题（确保与 desktop_sender.py 中的相同！）
+    const ntfyTopic = "loxieL";
+
+    // 使用私有 ntfy 服务器配置
+    const ntfyServer = "http://your-serverip";
+    const ntfyUrl = `${ntfyServer}/${ntfyTopic}/sse`;
+
+    const statusDiv = document.getElementById('status');
+    const modelStatusDiv = document.getElementById('model-status');
+    const clearHistoryButton = document.getElementById('clear-history-button');
+    const receivedImage = document.getElementById('received-image');
+    const fixedPromptDisplay = document.getElementById('fixed-prompt');
+    const llmResultPre = document.getElementById('llm-result');
+    const container = document.querySelector('.container');
+
+    let currentImageBase64 = null;
+    let selectedGeminiModel = "gemini-2.0-flash-thinking-exp";
+    let conversationHistory = [];
+    const MAX_HISTORY_LENGTH = 4;
+
+    // 根据所选模型更新主题颜色
+    function updateThemeColor() {
+        // 移除所有主题类
+        container.classList.remove('theme-pro', 'theme-flash');
+        
+        // 根据模型名称添加对应主题类
+        if (selectedGeminiModel.includes('pro')) {
+            container.classList.add('theme-pro');
+        } else if (selectedGeminiModel.includes('flash') || selectedGeminiModel.includes('1.5')) {
+            container.classList.add('theme-flash');
+        }
+    }
+
+    function updateStatus(message, isError = false) {
+        console.log(message);
+        statusDiv.textContent = message;
+        statusDiv.style.color = isError ? 'var(--accent-color)' : '#666';
+        
+        // 添加状态更新的视觉反馈
+        statusDiv.style.animation = 'none';
+        setTimeout(() => {
+            statusDiv.style.animation = 'pulse 2s infinite';
+        }, 10);
+    }
+
+    function updateModelStatus() {
+        modelStatusDiv.textContent = `当前模型: ${selectedGeminiModel}`;
+        console.log(`[*] Gemini model set to: ${selectedGeminiModel}`);
+        
+        // 更新主题颜色
+        updateThemeColor();
+        
+        // 添加模型更新的视觉反馈
+        modelStatusDiv.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            modelStatusDiv.style.transform = 'scale(1)';
+        }, 300);
+    }
+
+    function renderConversationHistory() {
+        llmResultPre.textContent = "";
+        if (conversationHistory.length === 0) {
+            llmResultPre.textContent = "对话历史为空。等待接收截图并自动处理...";
+            return;
+        }
+        conversationHistory.forEach(turn => {
+            let turnPrefix = "";
+            let turnContent = "";
+            if (turn.role === 'user') {
+                turnPrefix = "--- 用户输入 (图片 + 固定指令) ---";
+                const textPart = turn.parts.find(part => part.text);
+                turnContent = textPart ? textPart.text : "[包含图片数据]"; 
+            } else if (turn.role === 'model') {
+                turnPrefix = `--- ${selectedGeminiModel} 回复 ---`;
+                turnContent = turn.parts[0].text || "[无文本回复]";
+            }
+            llmResultPre.textContent += `${turnPrefix}\n${turnContent}\n\n`;
+        });
+        
+        // 添加结果更新的视觉反馈
+        llmResultPre.style.boxShadow = '0 0 0 2px var(--primary-color)';
+        setTimeout(() => {
+            llmResultPre.style.boxShadow = '0 3px 12px var(--shadow-color)';
+        }, 500);
+    }
+
+    function clearHistory() {
+        conversationHistory = [];
+        renderConversationHistory();
+        updateStatus("对话历史已清除。");
+        console.log("Conversation history cleared.");
+        
+        // 添加清除历史的视觉反馈
+        clearHistoryButton.textContent = "已清除!";
+        setTimeout(() => {
+            clearHistoryButton.textContent = "清除对话历史";
+        }, 1000);
+    }
+    
+    // 处理图片加载状态
+    function setImageLoading(isLoading) {
+        if (isLoading) {
+            receivedImage.classList.add('loading-image');
+        } else {
+            receivedImage.classList.remove('loading-image');
+        }
+    }
+    
+    clearHistoryButton.addEventListener('click', clearHistory);
+
+    updateStatus("正在连接到 ntfy 主题: " + ntfyTopic);
+    fixedPromptDisplay.textContent = "解决图片中的问题，给出答案，如果是编程题则使用Java语言编码解决。确保使用中文回答问题";
+    updateModelStatus();
+    renderConversationHistory();
+    setImageLoading(true); // 初始显示加载状态
+
+    const eventSource = new EventSource(ntfyUrl);
+
+    eventSource.onopen = function() {
+        updateStatus("已成功连接到 ntfy 主题: " + ntfyTopic);
+    };
+
+    eventSource.onerror = function(err) {
+        updateStatus("连接 ntfy 时发生错误。请检查网络或主题名称。", true);
+        console.error("EventSource failed:", err);
+    };
+
+    // 添加一个滚动页面到底部的辅助函数
+    function scrollPageToBottom() {
+        // 平滑滚动到页面底部
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    eventSource.onmessage = async function(event) { 
+        console.log("Raw ntfy message event data:", event.data);
+        let messageData;
+        try { messageData = JSON.parse(event.data); } catch (error) { console.warn("Ignoring non-JSON message"); return; }
+        console.log("Parsed ntfy message wrapper:", messageData);
+
+        // 首先检查消息本身是否包含控制命令
+        if (messageData && messageData.message) {
+            try {
+                // 尝试解析消息内容
+                const messageParsed = JSON.parse(messageData.message);
+                console.log("Parsed message content:", messageParsed);
+                
+                // 如果消息是控制消息，直接处理
+                if (messageParsed && messageParsed.type === "control" && messageParsed.command) {
+                    console.log("Found control command in message content");
+                    handleControlMessage(messageParsed.command, messageParsed.value);
+                    return; // 已处理控制消息，不需要继续检查附件
+                }
+            } catch (e) {
+                console.log("Message is not a parsable JSON, continuing to check attachment");
+                // 继续检查附件，不中断处理
+            }
+        }
+
+        // 然后再检查附件
+        if (messageData && messageData.attachment && typeof messageData.attachment.url === 'string') {
+            setImageLoading(true); // 开始加载图片
+            const attachmentUrl = messageData.attachment.url;
+            console.log(`[*] Received attachment message, downloading from ${attachmentUrl}...`);
+            try {
+                const response = await fetch(attachmentUrl);
+                if (!response.ok) { throw new Error(`下载附件失败: ${response.status} ${response.statusText}`); }
+                const payloadData = await response.json(); 
+                console.log("Parsed attachment payload data:", payloadData);
+
+                if (payloadData && payloadData.type === "control" && payloadData.command) {
+                    handleControlMessage(payloadData.command, payloadData.value);
+                    setImageLoading(false); // 结束加载状态
+                } else if (payloadData && typeof payloadData.image_base64 === 'string') {
+                    currentImageBase64 = payloadData.image_base64;
+                    receivedImage.src = `data:image/png;base64,${currentImageBase64}`;
+                    receivedImage.alt = "最新接收的截图"; 
+                    updateStatus("已接收截图，准备结合历史记录调用 Gemini...");
+                    llmResultPre.textContent += "\n--- [正在结合历史调用 Gemini API...] ---\n"; 
+                    // 收到新消息后滚动到页面底部
+                    scrollPageToBottom();
+                    
+                    // 图片加载完成后移除加载状态
+                    receivedImage.onload = function() {
+                        setImageLoading(false);
+                    };
+                    
+                    await callGeminiAutomatically(currentImageBase64);
+                    // API调用完成后也滚动到页面底部
+                    scrollPageToBottom();
+
+                } else {
+                    updateStatus("下载的附件内容格式无法识别或缺少图片数据。", true);
+                    console.warn("Unrecognized attachment payload format or missing image:", payloadData);
+                    setImageLoading(false); // 结束加载状态
+                }
+            } catch(fetchError) {
+                 updateStatus(`处理附件消息时出错: ${fetchError.message}`, true);
+                 console.error("Error fetching or parsing attachment:", fetchError);
+                 receivedImage.src = "";
+                 receivedImage.alt = "处理附件时出错";
+                 llmResultPre.textContent = "处理附件时出错";
+                 setImageLoading(false); // 结束加载状态
+            }
+        } else {
+            console.log("Message without attachment:", messageData);
+        }
+    }; 
+
+    function handleControlMessage(command, value) {
+        console.log(`[*] Received control command: ${command}, value: ${value}`);
+        if (command === "set_gemini_model") {
+            if (typeof value === 'string' && value.startsWith('gemini-')) { 
+                selectedGeminiModel = value;
+                updateModelStatus();
+                updateStatus(`Gemini 模型已切换为: ${selectedGeminiModel}`);
+            } else {
+                console.warn(`[!] Received invalid Gemini model value: ${value}`);
+                updateStatus(`收到无效的 Gemini 模型名称: ${value}`, true);
+            }
+        } else if (command === "scroll") {
+            // 处理滚动命令
+            const scrollAmountVH = 50; // 垂直方向滚动视窗高度的 50%
+            const scrollAmountVW = 50; // 水平方向滚动视窗宽度的 50%
+            
+            // 计算实际像素滚动距离
+            const scrollDistanceY = (window.innerHeight * scrollAmountVH) / 100;
+            const scrollDistanceX = (window.innerWidth * scrollAmountVW) / 100;
+            
+            let scrollDirection = "";
+            if (value === "up") {
+                window.scrollBy({ top: -scrollDistanceY, left: 0, behavior: 'smooth' });
+                scrollDirection = "向上";
+            } else if (value === "down") {
+                window.scrollBy({ top: scrollDistanceY, left: 0, behavior: 'smooth' });
+                scrollDirection = "向下";
+            } else if (value === "left") {
+                window.scrollBy({ top: 0, left: -scrollDistanceX, behavior: 'smooth' });
+                scrollDirection = "向左";
+            } else if (value === "right") {
+                window.scrollBy({ top: 0, left: scrollDistanceX, behavior: 'smooth' });
+                scrollDirection = "向右";
+            } else {
+                console.warn(`[!] 收到未知的滚动值: ${value}`);
+                return; // 不更新状态栏
+            }
+            
+            updateStatus(`执行${scrollDirection}滚动命令`);
+            console.log(`[*] 执行滚动命令: ${value}`);
+        } else if (command === "clear_history") {
+            // 处理清除历史记录命令
+            clearHistory(); // 直接调用已有的清除历史函数
+            updateStatus("已通过快捷键清除对话历史记录。");
+            console.log("[*] 执行清除历史命令");
+        } else {
+            console.warn(`[!] Received unknown control command: ${command}`);
+        }
+    }
+
+    async function callGeminiAutomatically(imageBase64) {
+        if (!imageBase64) {
+            updateStatus("无法调用 Gemini：缺少图片数据。", true);
+            return;
+        }
+
+        const geminiApiKey = "your-geminikey";
+        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedGeminiModel}:generateContent?key=${geminiApiKey}`;
+        const fixedUserPrompt = "解决图片中的问题，给出答案，如果是编程题则使用Java语言编码解决。确保使用中文回答问题";
+
+        const currentUserTurn = {
+            role: 'user',
+            parts: [
+                { text: fixedUserPrompt },
+                {
+                    inline_data: { 
+                        mime_type: "image/png",
+                        data: imageBase64
+                    }
+                }
+            ]
+        };
+
+        const contentsToSend = [...conversationHistory, currentUserTurn];
+
+        updateStatus(`正在使用 ${selectedGeminiModel} 结合 ${conversationHistory.length / 2} 轮历史记录处理图片...`); 
+        console.log(`[*] Calling Gemini (${selectedGeminiModel}) with ${contentsToSend.length} content items.`);
+
+        try {
+            const requestBody = JSON.stringify({ contents: contentsToSend });
+
+            const response = await fetch(geminiApiUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: requestBody
+            });
+
+            if (!response.ok) {
+                 const errorText = await response.text(); 
+                 let errorDetails = errorText;
+                 try { errorDetails = JSON.parse(errorText).error.message; } catch (e) { /* Use raw text */ }
+                 llmResultPre.textContent = llmResultPre.textContent.replace("--- [正在结合历史调用 Gemini API...] ---", `--- [API 请求失败: ${errorDetails}] ---`);
+                 scrollPageToBottom(); // 滚动到页面底部以显示错误信息
+                 throw new Error(`Gemini API 请求失败 (${selectedGeminiModel}): ${response.status} ${response.statusText}. ${errorDetails}`);
+            }
+
+            const resultData = await response.json();
+            console.log(`Gemini API response (${selectedGeminiModel}):`, resultData);
+
+            let resultText = null;
+            if (resultData && resultData.candidates && resultData.candidates[0] &&
+                resultData.candidates[0].content && resultData.candidates[0].content.parts &&
+                resultData.candidates[0].content.parts[0] && resultData.candidates[0].content.parts[0].text) {
+                resultText = resultData.candidates[0].content.parts[0].text;
+            } else {
+                 let reason = "未知原因或无文本内容";
+                 if(resultData?.candidates?.[0]?.finishReason) { reason = `完成原因: ${resultData.candidates[0].finishReason}`; }
+                 if(resultData?.promptFeedback?.blockReason) { reason = `Prompt Blocked: ${resultData.promptFeedback.blockReason}`; }
+                 const errorMsg = `未能提取文本。${reason}\n原始响应: ${JSON.stringify(resultData, null, 2)}`;
+                 llmResultPre.textContent = llmResultPre.textContent.replace("--- [正在结合历史调用 Gemini API...] ---", `--- [未能提取文本: ${reason}] ---`);
+                 updateStatus(`Gemini 处理完成 (${selectedGeminiModel})，但未返回预期文本 (${reason})。`, true);
+                 scrollPageToBottom(); // 滚动到页面底部以显示错误信息
+                 return; 
+            }
+
+            const modelTurn = { role: 'model', parts: [{ text: resultText }] };
+            conversationHistory.push(currentUserTurn, modelTurn);
+
+            if (conversationHistory.length > MAX_HISTORY_LENGTH) {
+                 conversationHistory = conversationHistory.slice(-MAX_HISTORY_LENGTH);
+                 console.log(`[*] History trimmed to last ${MAX_HISTORY_LENGTH} items.`);
+            }
+            
+            renderConversationHistory();
+            scrollPageToBottom(); // 在渲染完历史记录后滚动到页面底部
+            updateStatus(`处理完成！(${selectedGeminiModel}) 已结合历史返回结果。`);
+
+        } catch (error) {
+            console.error(`调用 Gemini API (${selectedGeminiModel}) 时出错:`, error);
+            updateStatus(`处理失败 (${selectedGeminiModel}): ${error.message}`, true);
+            scrollPageToBottom(); // 滚动到页面底部以显示错误信息
+        }
+    } 
+
+    window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+            eventSource.close();
+            console.log("EventSource 连接已关闭。");
+        }
+    });
+
+    // 初始调用一次主题更新
+    updateThemeColor();
+
+</script>
+
+</body>
+</html> 
